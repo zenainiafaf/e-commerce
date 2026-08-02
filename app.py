@@ -4,10 +4,13 @@ import stripe
 from generate_invoice import generate_invoice
 from flask_mail import Mail, Message
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from pusher_config_example import pusher_client
+
 from flask_cors import CORS
 import joblib
 import pandas as pd
@@ -16,30 +19,30 @@ from flask import jsonify
 
 
 
-# Charger le modèle sauvegardé
+# Load the saved model
 model = joblib.load('model_pipeline.pkl')
 
 
 app = Flask(__name__)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ecommerce.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ecommerce.db').replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'd56f3b2c9b1f5a7e8c0d3f7b4e9a2c6d8f1e5b3a7c9d2e4f6b8a1d3c5e7f9'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-me')
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 # Stripe
-stripe.api_key = ""
-STRIPE_PUBLIC_KEY = ""
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', '')
 
 # Mail
-app.config['MAIL_SERVER'] = 'smtp.office365.com'
-app.config['MAIL_PORT'] = 587
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.office365.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'lizamezioug03@outlook.com'
-app.config['MAIL_PASSWORD'] = 'Liza792003'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 mail = Mail(app)
 
 
@@ -101,11 +104,11 @@ class Order(db.Model):
     @property
     def status_label(self):
         status_labels = {
-            'pending': 'En attente',
-            'processing': 'En traitement',
-            'shipped': 'Expédiée',
-            'delivered': 'Livrée',
-            'cancelled': 'Annulée'
+            'pending': 'Pending',
+            'processing': 'Processing',
+            'shipped': 'Shipped',
+            'delivered': 'Delivered',
+            'cancelled': 'Cancelled'
         }
         return status_labels.get(self.status, 'Inconnu')
     
@@ -174,10 +177,10 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        redirect_to = request.args.get('redirect')  # Récupère la page de destination
+        redirect_to = request.args.get('redirect')  # Get the destination page
 
         if not email or not password:
-            return "Champs manquants", 400
+            return "Missing fields", 400
 
         user = User.query.filter_by(email=email).first()
         
@@ -188,9 +191,9 @@ def login():
                 if user.is_admin:
                     return redirect(url_for('admin'))
                 
-                # Redirige vers la page demandée ou vers l'index par défaut
+                # Redirect to the requested page or to the index by default
                 if redirect_to:
-                    return redirect(url_for(redirect_to))  # Modification clé ici
+                    return redirect(url_for(redirect_to))  # Key change here
                 return redirect(url_for('index'))
             else:
                 return redirect(url_for('login', error='login'))
@@ -203,7 +206,7 @@ def login():
                 session['customer_email'] = email
                 
                 if redirect_to:
-                    return redirect(url_for(redirect_to))  # Même modification pour l'inscription
+                    return redirect(url_for(redirect_to))  # Same change for registration
                 return redirect(url_for('index'))
             except Exception as e:
                 return redirect(url_for('login', error='register'))
@@ -249,12 +252,12 @@ def cart():
 def add_to_cart(product_id):
     product = Product.query.get(product_id)
     if not product or product.stock <= 0:
-        return jsonify({'error': 'Stock insuffisant'}), 400
+        return jsonify({'error': 'Insufficient stock'}), 400
 
     cart = session.get('cart', {})
 
     if cart.get(str(product_id), 0) >= product.stock:
-        return jsonify({'error': 'Stock insuffisant'}), 400
+        return jsonify({'error': 'Insufficient stock'}), 400
 
     cart[str(product_id)] = cart.get(str(product_id), 0) + 1
     session['cart'] = cart
@@ -291,7 +294,7 @@ def clear_cart():
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     if 'customer_email' not in session:
-        print("❌ Utilisateur non connecté — redirection vers login")
+        print("❌ User not logged in — redirecting to login")
         return redirect(url_for('login', redirect='checkout'))
 
     cart_items = session.get('cart', {})
@@ -323,7 +326,7 @@ def create_checkout_session():
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
-        print(f"Erreur Stripe: {e}")
+        print(f"Stripe error: {e}")
         return redirect(url_for('cart'))
 
 @app.route('/success')
@@ -337,9 +340,9 @@ def success():
     if not customer_email:
         return redirect(url_for('login'))
         
-    customer_name = customer_email.split('@')[0]  # Utiliser la partie avant @ comme nom par défaut
+    customer_name = customer_email.split('@')[0]  # Use the part before @ as the default name
     
-    # Créer une nouvelle commande
+    # Create a new order
     total_price = 0
     order_items = []
     
@@ -353,10 +356,10 @@ def success():
                 'quantity': quantity,
                 'price': product.price
             })
-            # Mettre à jour le stock
+            # Update the stock
             product.stock -= quantity
     
-    # Créer la commande dans la base de données
+    # Create the order in the database
     order = Order(
         customer_email=customer_email,
         total_amount=total_price,
@@ -378,20 +381,20 @@ def success():
     
     db.session.commit()
 
-    # Générer la facture
+    # Generate the invoice
     invoice_items = [{'name': item['product_name'], 'quantity': item['quantity'], 'price': item['price']} for item in order_items]
     invoice_path = generate_invoice(order.id, customer_name, customer_email, invoice_items, total_price)
 
     # Envoyer la facture par email
     if customer_email:
         try:
-            msg = Message("Votre Facture", sender=app.config['MAIL_USERNAME'], recipients=[customer_email])
-            msg.body = "Veuillez trouver votre facture ci-jointe."
+            msg = Message("Your Invoice", sender=app.config['MAIL_USERNAME'], recipients=[customer_email])
+            msg.body = "Please find your invoice attached."
             with app.open_resource(invoice_path) as fp:
                 msg.attach(os.path.basename(invoice_path), "application/pdf", fp.read())
             mail.send(msg)
         except Exception as e:
-            print(f"Erreur lors de l'envoi de l'email: {e}")
+            print(f"Error sending email: {e}")
 
     session.pop('cart', None)
 
@@ -454,7 +457,7 @@ def admin_add_product():
         return jsonify({'error': 'Unauthorized'}), 403
 
     try:
-        # Récupération des données du formulaire
+        # Retrieve form data
         name = request.form.get('name')
         brand = request.form.get('brand')
         bag_style = request.form.get('bag_style')
@@ -467,7 +470,7 @@ def admin_add_product():
         stock = int(request.form.get('stock'))
         is_auction = 'is_auction' in request.form
 
-        # Vérification et enregistrement de l'image
+        # Check and save the image
         if 'image' not in request.files:
             return jsonify({'error': 'No image provided'}), 400
 
@@ -482,7 +485,7 @@ def admin_add_product():
             image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             image.save(image_path)
 
-            # Création de l'objet produit
+            # Create the product object
             product = Product(
                 name=name,
                 brand=brand,
@@ -500,9 +503,9 @@ def admin_add_product():
             db.session.add(product)
             db.session.commit()
 
-            return jsonify({'success': True, 'message': 'Produit ajouté avec succès'})
+            return jsonify({'success': True, 'message': 'Product added successfully'})
         else:
-            return jsonify({'error': 'Type de fichier invalide'}), 400
+            return jsonify({'error': 'Invalid file type'}), 400
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -544,7 +547,7 @@ def update_product(product_id):
         product = Product.query.get_or_404(product_id)
         data = request.get_json()
 
-        # Mettre à jour tous les champs du formulaire
+        # Update all form fields
         product.name = data.get('name', product.name)
         product.price = float(data.get('price', product.price))
         product.stock = int(data.get('stock', product.stock))
@@ -812,54 +815,48 @@ def update_user(user_id):
 def auction_detail(product_id):
     product = Product.query.get_or_404(product_id)
     if not product.is_auction:
-        return "Ce produit n'est pas une enchère", 404
+        return "This product is not an auction", 404
         
     auction = Auction.query.filter_by(product_id=product_id).first()
     if not auction:
-        return "Aucune enchère trouvée pour ce produit", 404
+        return "No auction found for this product", 404
         
     if auction.is_active:
         return render_template('auction_detail.html', auction=auction, product=product)
     else:
-        return "Cette enchère a déjà été terminée.", 404
+        return "This auction has already ended.", 404
     
 
 
 @app.route('/place_bid/<int:product_id>', methods=['POST'])
 def place_bid(product_id):
     if 'customer_email' not in session:
-        return jsonify({'error': 'Connectez-vous pour participer'}), 401
+        return jsonify({'error': 'Please log in to participate'}), 401
         
     product = Product.query.get_or_404(product_id)
     if not product.is_auction:
-        return jsonify({'error': 'Ce produit ne supporte pas les enchères'}), 400
+        return jsonify({'error': 'This product does not support auctions'}), 400
         
     auction = Auction.query.filter_by(product_id=product_id).first()
     if not auction or not auction.is_active:
-        return jsonify({'error': 'Enchère non disponible'}), 400
+        return jsonify({'error': 'Auction not available'}), 400
         
     data = request.json
     amount = float(data.get('amount'))
     
-    # Vérifier que l'enchère est supérieure au prix de départ et à la dernière enchère
+    # Check that the bid is higher than the starting price and the last bid
     last_bid = Bid.query.filter_by(auction_id=auction.id).order_by(Bid.amount.desc()).first()
     min_bid = product.price if not last_bid else last_bid.amount + 1
     
     if amount < min_bid:
-        return jsonify({'error': f'Votre enchère doit être au moins de {min_bid}€'}), 400
+        return jsonify({'error': f'Your bid must be at least {min_bid}€'}), 400
     
     email = session.get('customer_email')
     bid = Bid(user_email=email, auction_id=auction.id, amount=amount)
     db.session.add(bid)
     db.session.commit()
     
-    pusher_client.trigger(f"auction-{auction.id}", "new-bid", {
-        'email': email, 
-        'amount': amount,
-        'product_name': product.name
-    })
-    
-    return jsonify({'success': True, 'message': 'Enchère placée avec succès'}) 
+    return jsonify({'success': True, 'message': 'Bid placed successfully'})
     
 @app.route('/profile')
 def profile():
@@ -872,10 +869,10 @@ def profile():
     if not user:
         return redirect(url_for('login'))
     
-    # Récupération des commandes de l'utilisateur
+    # Retrieve the user's orders
     orders = Order.query.filter_by(customer_email=email).order_by(Order.order_date.desc()).all()
     
-    # Récupération des enchères auxquelles l'utilisateur a participé
+    # Retrieve the auctions the user participated in
     user_bids = Bid.query.filter_by(user_email=email).all()
     auction_ids = set([bid.auction_id for bid in user_bids])
     
@@ -883,13 +880,13 @@ def profile():
     for auction_id in auction_ids:
         auction = Auction.query.get(auction_id)
         if auction:
-            # Récupérer la meilleure offre de l'utilisateur pour cette enchère
+            # Get the user's best offer for this auction
             my_best_bid = Bid.query.filter_by(user_email=email, auction_id=auction_id).order_by(Bid.amount.desc()).first()
             
-            # Récupérer la meilleure offre globale pour cette enchère
+            # Get the overall best offer for this auction
             highest_bid = Bid.query.filter_by(auction_id=auction_id).order_by(Bid.amount.desc()).first()
             
-            # Vérifier si l'utilisateur est le gagnant d'une enchère terminée
+            # Check if the user won a finished auction
             is_winner = False
             if not auction.is_active and highest_bid and highest_bid.user_email == email:
                 is_winner = True
@@ -902,7 +899,7 @@ def profile():
             }
             participated_auctions.append(auction_data)
     
-    # Tri des enchères (actives en premier, puis par date de fin)
+    # Sort auctions (active first, then by end date)
     participated_auctions.sort(key=lambda x: (not x['auction'].is_active, x['auction'].end_time), reverse=False)
     
     return render_template('profile.html', 
@@ -919,32 +916,32 @@ def update_info():
     new_email = request.form.get('email')
     
     if not new_email:
-        return redirect(url_for('profile', message='Email invalide', type='error'))
+        return redirect(url_for('profile', message='Invalid email', type='error'))
     
     user = User.query.filter_by(email=current_email).first()
     
     if not user:
         return redirect(url_for('login'))
     
-    # Vérifier si le nouvel email existe déjà pour un autre utilisateur
+    # Check if the new email already exists for another user
     if new_email != current_email and User.query.filter_by(email=new_email).first():
-        return redirect(url_for('profile', message='Cet email est déjà utilisé', type='error'))
+        return redirect(url_for('profile', message='This email is already in use', type='error'))
     
-    # Mettre à jour l'email
+    # Update the email
     user.email = new_email
     session['customer_email'] = new_email
     
-    # Mettre à jour aussi l'email dans les autres tables référençant cet utilisateur
-    # Par exemple, les enchères et les commandes
+    # Also update the email in other tables referencing this user
+    # For example, bids and orders
     Bid.query.filter_by(user_email=current_email).update({'user_email': new_email})
     Order.query.filter_by(customer_email=current_email).update({'customer_email': new_email})
     
     try:
         db.session.commit()
-        return redirect(url_for('profile', message='Informations mises à jour avec succès', type='success'))
+        return redirect(url_for('profile', message='Information updated successfully', type='success'))
     except Exception as e:
         db.session.rollback()
-        return redirect(url_for('profile', message='Une erreur est survenue: ' + str(e), type='error'))
+        return redirect(url_for('profile', message='An error occurred: ' + str(e), type='error'))
 
 @app.route('/profile/update_password', methods=['POST'])
 def update_password():
@@ -957,25 +954,25 @@ def update_password():
     confirm_password = request.form.get('confirm_password')
     
     if not current_password or not new_password or not confirm_password:
-        return redirect(url_for('profile', message='Tous les champs sont requis', type='error'))
+        return redirect(url_for('profile', message='All fields are required', type='error'))
     
     if new_password != confirm_password:
-        return redirect(url_for('profile', message='Les nouveaux mots de passe ne correspondent pas', type='error'))
+        return redirect(url_for('profile', message='New passwords do not match', type='error'))
     
     user = User.query.filter_by(email=email).first()
     
     if not user or not check_password_hash(user.password, current_password):
-        return redirect(url_for('profile', message='Mot de passe actuel incorrect', type='error'))
+        return redirect(url_for('profile', message='Current password is incorrect', type='error'))
     
-    # Mettre à jour le mot de passe
+    # Update the password
     user.password = generate_password_hash(new_password)
     
     try:
         db.session.commit()
-        return redirect(url_for('profile', message='Mot de passe modifié avec succès', type='success'))
+        return redirect(url_for('profile', message='Password changed successfully', type='success'))
     except Exception as e:
         db.session.rollback()
-        return redirect(url_for('profile', message='Une erreur est survenue: ' + str(e), type='error'))
+        return redirect(url_for('profile', message='An error occurred: ' + str(e), type='error'))
 
 @app.route('/download_invoice/<int:order_id>')
 def download_invoice(order_id):
@@ -985,11 +982,11 @@ def download_invoice(order_id):
     email = session['customer_email']
     order = Order.query.get_or_404(order_id)
     
-    # Vérifier que l'utilisateur est bien le propriétaire de la commande
+    # Check that the user actually owns the order
     if order.customer_email != email:
-        return "Non autorisé", 403
+        return "Unauthorized", 403
     
-    # Récupérer les items de la commande pour la facture
+    # Retrieve the order items for the invoice
     items = []
     for item in order.items:
         items.append({
@@ -998,15 +995,15 @@ def download_invoice(order_id):
             'price': item.price
         })
     
-    # Générer la facture
-    customer_name = email.split('@')[0]  # Utiliser la partie avant @ comme nom par défaut
+    # Generate the invoice
+    customer_name = email.split('@')[0]  # Use the part before @ as the default name
     invoice_path = generate_invoice(order.id, customer_name, email, items, order.total_amount)
     
     return send_file(invoice_path, as_attachment=True)
 
 @app.route('/logout')
 def logout():
-    # Efface les données de session
+    # Clear session data
     session.pop('customer_email', None)
     session.pop('cart', None)
     # Redirige vers la page d'accueil
@@ -1022,7 +1019,7 @@ def logout():
 def predict():
     data = request.get_json()
 
-    # Créer un DataFrame avec les bons noms de colonnes
+    # Create a DataFrame with the correct column names
     features_df = pd.DataFrame([{
         'brand': data['brand'],
         'bag style': data['bag_style'],
@@ -1033,15 +1030,16 @@ def predict():
         'accessories': data['accessories']
     }])
 
-    # Prédiction
+    # Prediction
     predicted_price = model.predict(features_df)
 
     return jsonify(predicted_price=predicted_price[0])
 
 
 
+CORS(app)
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 if __name__ == '__main__':
-    CORS(app)
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
-    app.run(debug=True)
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')

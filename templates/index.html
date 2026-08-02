@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Boutique en ligne</title>
+  <title>Online Shop</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -164,18 +164,18 @@
 
   <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
-      <a class="navbar-brand" href="/">🛍 Boutique</a>
-      <button class="btn btn-outline-light me-2" onclick="toggleDarkMode()">🌙 Mode sombre</button>
+      <a class="navbar-brand" href="/">🛍 Shop</a>
+      <button class="btn btn-outline-light me-2" onclick="toggleDarkMode()">🌙 Dark mode</button>
 
       {% if session.get('customer_email') %}
-        <a href="{{ url_for('profile') }}" class="btn btn-outline-light me-2">👤 Mon Profil</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-light me-2">🚪 Déconnexion</a>
+        <a href="{{ url_for('profile') }}" class="btn btn-outline-light me-2">👤 My Profile</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-light me-2">🚪 Logout</a>
       {% else %}
-        <a href="{{ url_for('login', redirect='profile') }}" class="btn btn-outline-light me-2">👤 Connexion</a>
+        <a href="{{ url_for('login', redirect='profile') }}" class="btn btn-outline-light me-2">👤 Login</a>
       {% endif %}
 
       <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
-        🛒 Panier
+        🛒 Cart
         <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
           {{ cart_count }}
         </span>
@@ -186,18 +186,18 @@
   <div class="container mt-4">
     <div class="d-flex justify-content-end flex-wrap gap-3 mb-3">
       <select class="form-select form-select-sm" id="brandFilter" style="max-width: 180px;">
-        <option value="">-- Filtrer par marque --</option>
+        <option value="">-- Filter by brand --</option>
       </select>
 
       <select class="form-select form-select-sm" id="priceOrder" style="max-width: 180px;">
-        <option value="">-- Trier par prix --</option>
-        <option value="asc">Prix croissant</option>
-        <option value="desc">Prix décroissant</option>
+        <option value="">-- Sort by price --</option>
+        <option value="asc">Price: low to high</option>
+        <option value="desc">Price: high to low</option>
       </select>
     </div>
 
     <div class="row" id="productList">
-      <!-- Produits injectés dynamiquement -->
+      <!-- Products injected dynamically -->
     </div>
 
     <div class="overlay" id="overlay"></div>
@@ -209,15 +209,15 @@
       </div>
       <div class="detail-info">
         <h3 id="detailName"></h3>
-        <p><strong>Marque:</strong> <span id="detailBrand"></span></p>
+        <p><strong>Brand:</strong> <span id="detailBrand"></span></p>
         <p><strong>Style:</strong> <span id="detailStyle"></span></p>
-        <p><strong>Peau:</strong> <span id="detailSkin"></span></p>
-        <p><strong>Intérieur:</strong> <span id="detailInner"></span></p>
-        <p><strong>Couleur:</strong> <span id="detailColor"></span></p>
+        <p><strong>Skin:</strong> <span id="detailSkin"></span></p>
+        <p><strong>Interior:</strong> <span id="detailInner"></span></p>
+        <p><strong>Color:</strong> <span id="detailColor"></span></p>
         <p><strong>Volume:</strong> <span id="detailVolume"></span></p>
-        <p><strong>Accessoires:</strong> <span id="detailAccessories"></span></p>
-        <p><strong>Prix:</strong> <span id="detailPrice"></span></p>
-        <p><strong>Disponibilité:</strong> <span id="detailStock"></span></p>
+        <p><strong>Accessories:</strong> <span id="detailAccessories"></span></p>
+        <p><strong>Price:</strong> <span id="detailPrice"></span></p>
+        <p><strong>Availability:</strong> <span id="detailStock"></span></p>
         <p><strong>Type:</strong> <span id="detailType"></span></p>
         <button id="detailActionBtn" class="btn btn-primary mt-3 w-100"></button>
       </div>
@@ -247,14 +247,14 @@
               <h5 class="card-title">{{ product.name }}</h5>
               <div class="mt-auto">
                 {% if product.is_auction %}
-                  <span class="badge bg-warning mb-2">Enchère</span>
-                  <p class="auction-price">Prix de départ: {{ product.price }} €</p>
+                  <span class="badge bg-warning mb-2">Auction</span>
+                  <p class="auction-price">Starting price: {{ product.price }} €</p>
                 {% else %}
                   <p class="card-text fw-bold">{{ product.price }} €</p>
                   {% if product.stock > 0 %}
-                    <span class="badge bg-success stock-badge">En stock</span>
+                    <span class="badge bg-success stock-badge">In stock</span>
                   {% else %}
-                    <span class="badge bg-danger stock-badge">Rupture de stock</span>
+                    <span class="badge bg-danger stock-badge">Out of stock</span>
                   {% endif %}
                 {% endif %}
               </div>
@@ -264,24 +264,24 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-center">Aucun produit disponible.</p>
+      <p class="text-center">No products available.</p>
     {% endif %}
   </div>
 
-  <!-- Popup Enchère -->
+  <!-- Auction Popup -->
   <div class="modal fade" id="auctionModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Enchérir</h5>
+          <h5 class="modal-title">Place a Bid</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p>Voulez-vous avoir une idée du prix avant d'enchérir ?</p>
+          <p>Would you like an idea of the price before bidding?</p>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-info" onclick="predictPrice()">Oui, Prédire le prix</button>
-          <button class="btn btn-success" onclick="directBid()">Non, Enchérir directement</button>
+          <button class="btn btn-info" onclick="predictPrice()">Yes, Predict the price</button>
+          <button class="btn btn-success" onclick="directBid()">No, Bid directly</button>
         </div>
       </div>
     </div>
@@ -300,7 +300,7 @@
     let selectedProduct = null;
     let isDetailOpen = false;
 
-    // Chargement initial
+    // Initial loading
     document.addEventListener('DOMContentLoaded', function() {
       loadProductsFromTemplate();
       setupEventListeners();
@@ -337,12 +337,12 @@
       const order = priceOrder.value;
       let filtered = [...allProducts];
 
-      // Filtrage par marque (case insensitive)
+      // Filter by brand (case insensitive)
       if (selectedBrand) {
         filtered = filtered.filter(p => p.brand && p.brand.toLowerCase() === selectedBrand.toLowerCase());
       }
 
-      // Tri par prix
+      // Sort by price
       if (order === 'asc') {
         filtered.sort((a, b) => a.price - b.price);
       } else if (order === 'desc') {
@@ -360,12 +360,12 @@
 
         const stockBadge = product.is_auction ? '' :
           product.stock > 0 ?
-            `<span class="badge bg-success stock-badge">En stock</span>` :
-            `<span class="badge bg-danger stock-badge">Rupture de stock</span>`;
+            `<span class="badge bg-success stock-badge">In stock</span>` :
+            `<span class="badge bg-danger stock-badge">Out of stock</span>`;
 
         const priceDisplay = product.is_auction ?
-          `<span class="badge bg-warning mb-2">Enchère</span>
-           <p class="auction-price">Prix de départ: ${product.price} €</p>` :
+          `<span class="badge bg-warning mb-2">Auction</span>
+           <p class="auction-price">Starting price: ${product.price} €</p>` :
           `<p class="card-text fw-bold">${product.price} €</p> ${stockBadge}`;
 
         const card = `
@@ -391,35 +391,35 @@
       selectedProduct = product;
       isDetailOpen = true;
 
-      // Mise à jour des détails
+      // Update the details
       document.getElementById("detailImg").src = product.image;
       document.getElementById("detailName").textContent = product.name;
-      document.getElementById("detailBrand").textContent = product.brand || 'Non spécifié';
-      document.getElementById("detailStyle").textContent = product.bag_style || 'Non spécifié';
-      document.getElementById("detailSkin").textContent = product.skin_type || 'Non spécifié';
-      document.getElementById("detailInner").textContent = product.inner_material || 'Non spécifié';
-      document.getElementById("detailColor").textContent = product.major_color || 'Non spécifié';
-      document.getElementById("detailVolume").textContent = product.volume || 'Non spécifié';
-      document.getElementById("detailAccessories").textContent = product.accessories || 'Aucun';
+      document.getElementById("detailBrand").textContent = product.brand || 'Not specified';
+      document.getElementById("detailStyle").textContent = product.bag_style || 'Not specified';
+      document.getElementById("detailSkin").textContent = product.skin_type || 'Not specified';
+      document.getElementById("detailInner").textContent = product.inner_material || 'Not specified';
+      document.getElementById("detailColor").textContent = product.major_color || 'Not specified';
+      document.getElementById("detailVolume").textContent = product.volume || 'Not specified';
+      document.getElementById("detailAccessories").textContent = product.accessories || 'None';
 
-      // Affichage du prix et disponibilité
+      // Display price and availability
       const detailPrice = document.getElementById("detailPrice");
       const detailStock = document.getElementById("detailStock");
       const detailType = document.getElementById("detailType");
       const detailActionBtn = document.getElementById("detailActionBtn");
 
       if (product.is_auction) {
-        detailPrice.innerHTML = `<span class="auction-price">Prix de départ: ${product.price} €</span>`;
-        detailStock.textContent = "Disponible pour enchère";
-        detailType.innerHTML = '<span class="badge bg-warning">Enchère</span>';
-        detailActionBtn.textContent = 'Enchérir';
+        detailPrice.innerHTML = `<span class="auction-price">Starting price: ${product.price} €</span>`;
+        detailStock.textContent = "Available for bidding";
+        detailType.innerHTML = '<span class="badge bg-warning">Auction</span>';
+        detailActionBtn.textContent = 'Place a Bid';
         detailActionBtn.onclick = showPopup;
         detailActionBtn.disabled = false;
       } else {
         detailPrice.textContent = `${product.price} €`;
-        detailStock.textContent = product.stock > 0 ? "En stock" : "Rupture de stock";
-        detailType.innerHTML = '<span class="badge bg-success">Achat direct</span>';
-        detailActionBtn.textContent = product.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock';
+        detailStock.textContent = product.stock > 0 ? "In stock" : "Out of stock";
+        detailType.innerHTML = '<span class="badge bg-success">Direct purchase</span>';
+        detailActionBtn.textContent = product.stock > 0 ? 'Add to cart' : 'Out of stock';
         detailActionBtn.disabled = product.stock <= 0;
         detailActionBtn.onclick = function() {
           if (product.stock > 0) addToCart(product.id);
@@ -490,26 +490,26 @@
         })
       })
       .then(response => {
-        if (!response.ok) throw new Error('Erreur de prédiction');
+        if (!response.ok) throw new Error('Prediction error');
         return response.json();
       })
       .then(data => {
-        alert(`Prix prédit pour ce produit: ${data.predicted_price.toFixed(2)} €`);
-        // On ne ferme pas le modal ici pour permettre à l'utilisateur d'enchérir
+        alert(`Predicted price for this product: ${data.predicted_price.toFixed(2)} €`);
+        // We don't close the modal here to let the user place a bid
       })
       .catch(error => {
         console.error('Error:', error);
-        alert("Une erreur est survenue lors de la prédiction du prix");
+        alert("An error occurred while predicting the price");
       });
     }
 
     function directBid() {
       if (!selectedProduct) return;
-      // Fermer le modal de prédiction
+      // Close the prediction modal
       const modal = bootstrap.Modal.getInstance(document.getElementById('auctionModal'));
       if (modal) modal.hide();
 
-      // Rediriger vers la page d'enchère spécifique
+      // Redirect to the specific auction page
       window.location.href = `/auction/${selectedProduct.id}`;
     }
   </script>

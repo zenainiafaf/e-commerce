@@ -7,7 +7,7 @@ from email import encoders
 
 
 def generate_invoice(order_id, customer_name, customer_email, items, total_price):
-    INVOICE_DIR = "./invoice"  # Dossier des factures
+    INVOICE_DIR = "./invoice"  # Invoice folder
     os.makedirs(INVOICE_DIR, exist_ok=True)
 
     file_path = os.path.join(INVOICE_DIR, f"invoice_{order_id}.pdf")
@@ -17,21 +17,21 @@ def generate_invoice(order_id, customer_name, customer_email, items, total_price
     pdf.add_page()
     pdf.set_font("Arial", "B", 14)
 
-    # En-tête de la facture
-    pdf.cell(200, 10, f"Facture N°: {order_id}", ln=True, align="C")
-    pdf.ln(10)  # Espace
+    # Invoice header
+    pdf.cell(200, 10, f"Invoice No: {order_id}", ln=True, align="C")
+    pdf.ln(10)  # Spacing
 
-    # Informations du client
+    # Customer information
     pdf.set_font("Arial", "", 12)
-    pdf.cell(100, 10, f"Client: {customer_name if customer_name else 'Client inconnu'}", ln=True)
+    pdf.cell(100, 10, f"Customer: {customer_name if customer_name else 'Unknown customer'}", ln=True)
     pdf.cell(100, 10, f"Email: {customer_email}", ln=True)
     pdf.ln(10)
 
-    # Tableau des produits
+    # Products table
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(80, 10, "Produit", 1, 0, "C")
-    pdf.cell(30, 10, "Quantité", 1, 0, "C")
-    pdf.cell(40, 10, "Prix Unitaire", 1, 0, "C")
+    pdf.cell(80, 10, "Product", 1, 0, "C")
+    pdf.cell(30, 10, "Quantity", 1, 0, "C")
+    pdf.cell(40, 10, "Unit Price", 1, 0, "C")
     pdf.cell(40, 10, "Total", 1, 1, "C")
 
     pdf.set_font("Arial", "", 12)
@@ -41,30 +41,30 @@ def generate_invoice(order_id, customer_name, customer_email, items, total_price
         pdf.cell(40, 10, f"{item['price']}", 1, 0, "C")
         pdf.cell(40, 10, f"{item['quantity'] * item['price']}", 1, 1, "C")
 
-    # Ligne Total
+    # Total row
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(150, 10, "Total général", 1, 0, "C")
+    pdf.cell(150, 10, "Grand Total", 1, 0, "C")
     pdf.cell(40, 10, f"{total_price}", 1, 1, "C")
 
     pdf.output(file_path)
 
-    # Envoi de la facture par email
+    # Send the invoice by email
     send_invoice_by_email(customer_email, file_path, order_id)
 
     return file_path
 
 
-# Fonction pour envoyer la facture par e-mail
+# Function to send the invoice by email
 def send_invoice_by_email(to_email, file_path, order_id):
-    sender_email = "tonemail@gmail.com"  # Remplace par ton email
-    sender_password = "tonmotdepasse"  # Remplace par ton mot de passe
+    sender_email = "youremail@gmail.com"  # Replace with your email
+    sender_password = "yourpassword"  # Replace with your password
 
     msg = MIMEMultipart()
     msg["From"] = sender_email
     msg["To"] = to_email
-    msg["Subject"] = f"Votre Facture N° {order_id}"
+    msg["Subject"] = f"Your Invoice No. {order_id}"
 
-    # Attacher le fichier PDF
+    # Attach the PDF file
     with open(file_path, "rb") as attachment:
         part = MIMEBase("application", "octet-stream")
         part.set_payload(attachment.read())
@@ -72,13 +72,13 @@ def send_invoice_by_email(to_email, file_path, order_id):
         part.add_header("Content-Disposition", f"attachment; filename=invoice_{order_id}.pdf")
         msg.attach(part)
 
-    # Envoi de l'e-mail
+    # Send the email
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, to_email, msg.as_string())
         server.quit()
-        print(f"Facture envoyée à {to_email}")
+        print(f"Invoice sent to {to_email}")
     except Exception as e:
-        print(f"Erreur d'envoi d'email: {e}")
+        print(f"Email sending error: {e}")

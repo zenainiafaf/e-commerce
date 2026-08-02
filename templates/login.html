@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login | Inscription</title>
+    <title>Login | Sign Up</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
       * {
@@ -18,7 +18,7 @@
         justify-content: center;
         align-items: center;
         min-height: 100vh;
-        background: linear-gradient(90deg, #D8B4A6, #F1E1C6); /* Dégradé beige et marron clair */
+        background: linear-gradient(90deg, #D8B4A6, #F1E1C6); /* Beige to light brown gradient */
       }
 
       .container {
@@ -40,7 +40,7 @@
         background: #fff;
         display: flex;
         align-items: center;
-        color: #4E3629; /* Marron foncé */
+        color: #4E3629; /* Dark brown */
         text-align: center;
         padding: 40px;
         z-index: 1;
@@ -82,7 +82,7 @@
         border: none;
         outline: none;
         font-size: 16px;
-        color: #4E3629; /* Marron foncé */
+        color: #4E3629; /* Dark brown */
         font-weight: 500;
       }
 
@@ -97,7 +97,7 @@
         top: 50%;
         transform: translateY(-50%);
         font-size: 20px;
-        color: #4E3629; /* Marron foncé */
+        color: #4E3629; /* Dark brown */
       }
 
       .forgot-link {
@@ -106,7 +106,7 @@
 
       .forgot-link a {
         font-size: 14.5px;
-        color: #A56D47; /* Changé pour meilleure visibilité */
+        color: #A56D47; /* Changed for better visibility */
         text-decoration: none;
       }
 
@@ -139,7 +139,7 @@
         border: 2px solid #ccc;
         border-radius: 8px;
         font-size: 24px;
-        color: #4E3629; /* Marron foncé */
+        color: #4E3629; /* Dark brown */
         text-decoration: none;
         margin: 0 8px;
       }
@@ -285,22 +285,22 @@
       <!-- login form -->
       <div class="form-box login">
         <form action="/login" method="POST">
-          <h1>Connexion</h1>
+          <h1>Login</h1>
           <div class="input-box">
             <input type="email" name="email" placeholder="Email" required>
             <i class='bx bxs-envelope'></i>
           </div>
           <div class="input-box">
-            <input type="password" name="password" placeholder="Mot de passe" required>
+            <input type="password" name="password" placeholder="Password" required>
             <i class='bx bxs-lock-alt'></i>
           </div>
           <div class="forgot-link">
-            <a href="#">Mot de passe oublié?</a>
+            <a href="#">Forgot password?</a>
           </div>
-          <button type="submit" class="btn">Connexion</button>
-          <div id="login-error" class="error-message">Email ou mot de passe incorrect</div>
+          <button type="submit" class="btn">Login</button>
+          <div id="login-error" class="error-message">Incorrect email or password</div>
           
-          <p>ou connectez-vous avec</p>
+          <p>or login with</p>
           <div class="social-icons">
             <a href="#"><i class='bx bxl-google'></i></a>
             <a href="#"><i class='bx bxl-facebook'></i></a>
@@ -313,19 +313,19 @@
       <!-- Registration -->
       <div class="form-box register">
         <form action="/login" method="POST">
-          <h1>Inscription</h1>
+          <h1>Sign Up</h1>
           <div class="input-box">
             <input type="email" name="email" placeholder="Email" required>
             <i class='bx bxs-envelope'></i>
           </div>
           <div class="input-box">
-            <input type="password" name="password" placeholder="Mot de passe" required>
+            <input type="password" name="password" placeholder="Password" required>
             <i class='bx bxs-lock-alt'></i>
           </div>
-          <button type="submit" class="btn">S'inscrire</button>
-          <div id="register-error" class="error-message">Une erreur est survenue lors de l'inscription</div>
+          <button type="submit" class="btn">Sign Up</button>
+          <div id="register-error" class="error-message">An error occurred during sign up</div>
           
-          <p>ou inscrivez-vous avec</p>
+          <p>or sign up with</p>
           <div class="social-icons">
             <a href="#"><i class='bx bxl-google'></i></a>
             <a href="#"><i class='bx bxl-facebook'></i></a>
@@ -338,14 +338,14 @@
       <!-- Toggle -->
       <div class="toggle-box">
         <div class="toggle-panel toggle-left">
-          <h1>Bienvenue !</h1>
-          <p>Vous n'avez pas de compte ?</p>
-          <button class="btn register-btn" type="button">S'inscrire</button>
+          <h1>Welcome!</h1>
+          <p>Don't have an account?</p>
+          <button class="btn register-btn" type="button">Sign Up</button>
         </div>
         <div class="toggle-panel toggle-right">
-          <h1>Bon retour !</h1>
-          <p>Vous avez déjà un compte ?</p>
-          <button class="btn login-btn" type="button">Se connecter</button>
+          <h1>Welcome back!</h1>
+          <p>Already have an account?</p>
+          <button class="btn login-btn" type="button">Log In</button>
         </div>
       </div>
     </div>
@@ -363,7 +363,7 @@
         container.classList.remove("active");
       });
       
-      // Affichage des erreurs s'il y en a
+      // Display errors if any
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('error')) {
         const errorType = urlParams.get('error');
@@ -372,23 +372,23 @@
           errorMessage.style.display = 'block';
         }
         
-        // Activer le bon formulaire en fonction de l'erreur
+        // Activate the right form based on the error
         if (errorType === 'register') {
           container.classList.add("active");
         }
       }
       
-      // Si on est redirigé après une tentative de paiement
+      // If redirected after a payment attempt
       if (urlParams.has('redirect')) {
         const redirectParam = urlParams.get('redirect');
         sessionStorage.setItem('redirect_after_login', redirectParam);
       }
-      // Modification des formulaires pour inclure la redirection
+      // Update forms to include the redirect
 document.querySelectorAll('form').forEach(form => {
   form.addEventListener('submit', function(e) {
     const redirectAfterLogin = sessionStorage.getItem('redirect_after_login');
     if (redirectAfterLogin) {
-      // Ajouter un champ caché pour la redirection
+      // Add a hidden field for the redirect
       const redirectInput = document.createElement('input');
       redirectInput.type = 'hidden';
       redirectInput.name = 'redirect';
