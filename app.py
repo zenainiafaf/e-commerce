@@ -31,6 +31,7 @@ database_url = os.environ.get("DATABASE_URL")
 if database_url:
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 else:
+    os.makedirs("instance", exist_ok=True)
     database_url = "sqlite:///instance/ecommerce.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
