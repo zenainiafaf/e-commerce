@@ -4,7 +4,9 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def generate_invoice(order_id, customer_name, customer_email, items, total_price):
     INVOICE_DIR = "./invoice"  # Invoice folder
@@ -56,8 +58,8 @@ def generate_invoice(order_id, customer_name, customer_email, items, total_price
 
 # Function to send the invoice by email
 def send_invoice_by_email(to_email, file_path, order_id):
-    sender_email = "youremail@gmail.com"  # Replace with your email
-    sender_password = "yourpassword"  # Replace with your password
+    sender_email = os.getenv("MAIL_USERNAME")
+    sender_password = os.getenv("MAIL_PASSWORD")
 
     msg = MIMEMultipart()
     msg["From"] = sender_email
