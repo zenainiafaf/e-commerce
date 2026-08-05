@@ -26,7 +26,15 @@ model = joblib.load('model_pipeline.pkl')
 app = Flask(__name__)
 
 # Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ecommerce.db').replace('postgres://', 'postgresql://', 1)
+database_url = os.environ.get("DATABASE_URL")
+
+if database_url:
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+else:
+    database_url = "sqlite:///instance/ecommerce.db"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-me')
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
