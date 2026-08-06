@@ -187,7 +187,7 @@ def index():
 
 
 ADMIN_EMAILS = [
-    "admin@gmail.com"
+    "admin1@gmail.com"
 ]
 # Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
