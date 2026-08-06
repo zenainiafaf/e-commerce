@@ -31,12 +31,12 @@ database_url = os.environ.get("DATABASE_URL")
 if database_url:
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 else:
-    os.makedirs("instance", exist_ok=True)
-    database_url = "sqlite:///instance/ecommerce.db"
+    instance_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
+    os.makedirs(instance_path, exist_ok=True)
+    database_url = f"sqlite:///{os.path.join(instance_path, 'ecommerce.db')}"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-only-change-me')
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
