@@ -17,9 +17,7 @@ import pandas as pd
 import numpy as np
 from flask import jsonify
 
-ADMIN_EMAILS = [
-    "admin@gmail.com"
-]
+
 
 # Load the saved model
 model = joblib.load('model_pipeline.pkl')
@@ -187,6 +185,10 @@ def index():
     cart_count = sum(cart_items.values())
     return render_template('index.html', products=products, cart_count=cart_count, stripe_public_key=STRIPE_PUBLIC_KEY)
 
+
+ADMIN_EMAILS = [
+    "admin@gmail.com"
+]
 # Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
