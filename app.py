@@ -400,16 +400,7 @@ def success():
     invoice_items = [{'name': item['product_name'], 'quantity': item['quantity'], 'price': item['price']} for item in order_items]
     invoice_path = generate_invoice(order.id, customer_name, customer_email, invoice_items, total_price)
 
-    # Envoyer la facture par email
-    if customer_email:
-        try:
-            msg = Message("Your Invoice", sender=app.config['MAIL_USERNAME'], recipients=[customer_email])
-            msg.body = "Please find your invoice attached."
-            with app.open_resource(invoice_path) as fp:
-                msg.attach(os.path.basename(invoice_path), "application/pdf", fp.read())
-            mail.send(msg)
-        except Exception as e:
-            print(f"Error sending email: {e}")
+    
 
     session.pop('cart', None)
 

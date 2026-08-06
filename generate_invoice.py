@@ -50,8 +50,11 @@ def generate_invoice(order_id, customer_name, customer_email, items, total_price
 
     pdf.output(file_path)
 
-    # Send the invoice by email
-    send_invoice_by_email(customer_email, file_path, order_id)
+   # Send the invoice by email
+    try:
+      send_invoice_by_email(customer_email, file_path, order_id)
+    except Exception as e:
+      print("Invoice email failed:", e)
 
     return file_path
 
