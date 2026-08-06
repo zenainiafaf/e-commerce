@@ -138,6 +138,9 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 # Init DB + insert data
+import os
+
+os.makedirs("instance", exist_ok=True)
 with app.app_context():
     db.create_all()
     
