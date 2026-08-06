@@ -340,8 +340,9 @@ def create_checkout_session():
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
-        print(f"Stripe error: {e}")
-        return redirect(url_for('cart'))
+      import traceback
+      traceback.print_exc()
+      return f"Erreur Stripe: {str(e)}", 500
 
 @app.route('/success')
 def success():
