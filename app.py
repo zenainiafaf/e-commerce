@@ -45,6 +45,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 # Stripe
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', '')
+print("STRIPE SECRET EXISTS:", bool(stripe.api_key))
+print("STRIPE PUBLIC EXISTS:", bool(STRIPE_PUBLIC_KEY))
 
 # Mail
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.office365.com')
