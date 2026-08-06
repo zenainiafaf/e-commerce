@@ -66,21 +66,40 @@ def send_invoice_by_email(to_email, file_path, order_id):
     msg["To"] = to_email
     msg["Subject"] = f"Your Invoice No. {order_id}"
 
-    # Attach the PDF file
     with open(file_path, "rb") as attachment:
         part = MIMEBase("application", "octet-stream")
         part.set_payload(attachment.read())
         encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f"attachment; filename=invoice_{order_id}.pdf")
+        part.add_header(
+            "Content-Disposition",
+            f"attachment; filename=invoice_{order_id}.pdf"
+        )
         msg.attach(part)
 
-    # Send the email
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        # Ajout du timeout pour éviter Render timeout
+        server = smtplib.SMTP(
+            "smtp.gmail.com",
+            587,
+            timeout=10
+        )
+
         server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, to_email, msg.as_string())
+
+        server.login(
+            sender_email,
+            sender_password
+        )
+
+        server.sendmail(
+            sender_email,
+            to_email,
+            msg.as_string()
+        )
+
         server.quit()
+
         print(f"Invoice sent to {to_email}")
+
     except Exception as e:
         print(f"Email sending error: {e}")
