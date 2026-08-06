@@ -17,7 +17,9 @@ import pandas as pd
 import numpy as np
 from flask import jsonify
 
-
+ADMIN_EMAILS = [
+    "admin@gmail.com"
+]
 
 # Load the saved model
 model = joblib.load('model_pipeline.pkl')
@@ -202,8 +204,8 @@ def login():
             if check_password_hash(user.password, password):
                 session['customer_email'] = email
                 
-                if user.is_admin:
-                    return redirect(url_for('admin'))
+                if user.email in ADMIN_EMAILS:
+                   return redirect(url_for('admin'))
                 
                 # Redirect to the requested page or to the index by default
                 if redirect_to:
