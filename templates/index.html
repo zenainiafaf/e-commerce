@@ -227,21 +227,23 @@
       <div class="row mt-4">
         {% for product in products %}
         <div class="col-md-4 mb-4">
-          <div class="card h-100" onclick="showDetail({
-            'id': {{ product.id }},
-            'name': '{{ product.name | replace("'", "\\'") }}',
-            'price': {{ product.price }},
-            'image': '{{ url_for('static', filename='images/' + product.image) }}',
-            'brand': '{{ product.brand | replace("'", "\\'") }}',
-            'is_auction': {% if product.is_auction %}true{% else %}false{% endif %},
-            'bag_style': '{{ product.bag_style | replace("'", "\\'") }}',
-            'skin_type': '{{ product.skin_type | replace("'", "\\'") }}',
-            'inner_material': '{{ product.inner_material | replace("'", "\\'") }}',
-            'major_color': '{{ product.major_color | replace("'", "\\'") }}',
-            'volume': {% if product.volume %}{{ product.volume }}{% else %}null{% endif %},
-            'accessories': '{{ product.accessories | replace("'", "\\'") }}',
-            'stock': {{ product.stock }}
-          })">
+          <div class="card h-100"
+               data-product='{{ {
+                 "id": product.id,
+                 "name": product.name,
+                 "price": product.price,
+                 "image": url_for("static", filename="images/" + product.image),
+                 "brand": product.brand,
+                 "is_auction": product.is_auction,
+                 "bag_style": product.bag_style,
+                 "skin_type": product.skin_type,
+                 "inner_material": product.inner_material,
+                 "major_color": product.major_color,
+                 "volume": product.volume,
+                 "accessories": product.accessories,
+                 "stock": product.stock
+               } | tojson }}'
+               onclick="showDetail(JSON.parse(this.getAttribute('data-product')))">
             <img src="{{ url_for('static', filename='images/' + product.image) }}" class="card-img-top" alt="{{ product.name }}">
             <div class="card-body text-center">
               <h5 class="card-title">{{ product.name }}</h5>
@@ -307,11 +309,9 @@
     });
 
     function loadProductsFromTemplate() {
-      const productElements = document.querySelectorAll('.card[onclick^="showDetail"]');
+      const productElements = document.querySelectorAll('.card[data-product]');
       allProducts = Array.from(productElements).map(card => {
-        const onclickContent = card.getAttribute('onclick');
-        const jsonStr = onclickContent.replace('showDetail(', '').replace(')', '');
-        return JSON.parse(jsonStr);
+        return JSON.parse(card.getAttribute('data-product'));
       });
       populateBrandFilter();
     }
