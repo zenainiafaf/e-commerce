@@ -21,6 +21,30 @@
       background-color: #A56D47 !important;
     }
 
+    .dropdown-menu {
+      background-color: #fff;
+      border-radius: 10px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 200px;
+      padding: 6px;
+    }
+
+    .dropdown-item {
+      color: #4E3629;
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+
+    .dropdown-item:hover, .dropdown-item:focus {
+      background-color: #F1E1C6;
+      color: #4E3629;
+    }
+
+    .dropdown-item.text-danger:hover {
+      background-color: #fbeaea;
+    }
+
     .btn-primary {
       background-color: #A56D47;
       border-color: #7f5c48;
@@ -184,8 +208,16 @@
       <button class="btn btn-outline-light me-2" onclick="toggleDarkMode()">🌙 Dark mode</button>
 
       {% if session.get('customer_email') %}
-        <a href="{{ url_for('profile') }}" class="btn btn-outline-light me-2">👤 My Profile</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-light me-2">🚪 Logout</a>
+        <div class="dropdown me-2">
+          <button class="btn btn-outline-light dropdown-toggle" type="button" id="accountMenu" data-bs-toggle="dropdown" aria-expanded="false">
+            👤 {{ session.get('customer_email') }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}">👤 My Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
+          </ul>
+        </div>
       {% else %}
         <a href="{{ url_for('login', redirect='profile') }}" class="btn btn-outline-light me-2">👤 Login</a>
       {% endif %}
