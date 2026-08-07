@@ -31,7 +31,7 @@
             <h5>{{ auction.product.name }}</h5>
             <p>Starting price: {{ auction.product.price }} €</p>
             <p>Ends: {{ auction.end_time.strftime('%m/%d/%Y %H:%M') }}</p>
-            <a href="/auction/{{ auction.id }}" class="btn btn-primary">Join the auction</a>
+            <a href="/auction/{{ auction.product_id }}" class="btn btn-primary">Join the auction</a>
           </div>
         </div>
       {% endfor %}

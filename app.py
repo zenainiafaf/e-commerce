@@ -228,6 +228,7 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 session['customer_email'] = email
+                session.permanent = True
                 
                 if user.email in ADMIN_EMAILS:
                    return redirect(url_for('admin'))
@@ -245,6 +246,7 @@ def login():
                 db.session.add(new_user)
                 db.session.commit()
                 session['customer_email'] = email
+                session.permanent = True
                 
                 if redirect_to:
                     return redirect(url_for(redirect_to))  # Same change for registration
