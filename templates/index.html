@@ -374,16 +374,17 @@
            <p class="auction-price">Starting price: ${product.price} €</p>` :
           `<p class="card-text fw-bold">${product.price} €</p> ${stockBadge}`;
 
-        const card = `
-          <div class="card h-100" onclick="showDetail(${JSON.stringify(product)})">
-            <img src="${product.image}" class="card-img-top" alt="${product.name}">
-            <div class="card-body text-center">
-              <h5 class="card-title">${product.name}</h5>
-              <div class="mt-auto">${priceDisplay}</div>
-            </div>
+        const card = document.createElement("div");
+        card.className = "card h-100";
+        card.innerHTML = `
+          <img src="${product.image}" class="card-img-top" alt="${product.name}">
+          <div class="card-body text-center">
+            <h5 class="card-title">${product.name}</h5>
+            <div class="mt-auto">${priceDisplay}</div>
           </div>`;
+        card.addEventListener('click', () => showDetail(product));
 
-        col.innerHTML = card;
+        col.appendChild(card);
         productList.appendChild(col);
       });
     }
