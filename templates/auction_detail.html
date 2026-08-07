@@ -150,7 +150,7 @@
             <p>The item has been sold to <span class="highlight" id="winnerName">None</span></p>
             <p>Winning Bid: <span class="highlight" id="winningBid">€0.00</span></p>
             <p>Total Bids Placed: <span id="totalBids">0</span></p>
-            <a href="{{ url_for('profile') }}" class="btn" style="display:inline-block; text-decoration:none; text-align:center;">View in My Profile</a>
+            <button id="restartAuction" class="danger">Start New Auction</button>
         </div>
     </div>
     
@@ -158,6 +158,12 @@
         <div class="panel">
             <h2>Place Your Bid</h2>
             <form id="bidForm">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" required placeholder="Enter your full name">
+                
+                <label for="email">Email:</label>
+                <input type="email" id="email" required placeholder="Enter your registered email">
+                
                 <label for="bidAmount">Bid Amount (€):</label>
                 <input type="number" id="bidAmount" min="{{ product.price }}" step="5" required>
                 
@@ -196,158 +202,215 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const PRODUCT_ID = {{ product.id }};
-        const BASE_PRICE = {{ product.price }};
-
+        // Auction configuration - now using dynamic values from the page
+        const BASE_PRICE = parseFloat(document.getElementById('basePrice').textContent.replace('€', ''));
+        const MIN_INCREMENT = 5.00;
+        const INITIAL_AUCTION_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
+        const AUTO_EXTEND_THRESHOLD = 30 * 1000; // 30 seconds in milliseconds
+        
+        // Auction state
+        let bids = [];
+        let highestBid = { amount: BASE_PRICE, name: "None", email: "" };
+        let auctionEndTime = new Date().getTime() + INITIAL_AUCTION_DURATION;
+        let auctionFinished = false;
+        let auctionPaused = false;
+        let remainingPauseTime = 0;
+        let lastBidTime = null;
+        
         // DOM elements
         const countdownElement = document.getElementById('countdown');
         const bidButton = document.getElementById('bidButton');
         const winnerSection = document.getElementById('winnerSection');
         const bidForm = document.getElementById('bidForm');
         const bidAmountInput = document.getElementById('bidAmount');
-
-        let auctionEndTime = null;
-        let auctionFinished = false;
-        let countdownInterval = null;
-        let pollInterval = null;
-
-        // Fetch the real auction state from the server
-        async function refreshAuctionState() {
-            try {
-                const res = await fetch(`/auction_status/${PRODUCT_ID}`);
-                const data = await res.json();
-                if (!res.ok) return;
-
-                auctionEndTime = new Date(data.end_time).getTime();
-
-                updateHighestBidDisplay(data);
-                updateBidList(data.bids);
-
-                if (!data.is_active) {
-                    finishAuction(data);
-                }
-            } catch (error) {
-                console.error('Error fetching auction status:', error);
-            }
+        
+        // Initialize auction
+        function initAuction() {
+            // Set base price and minimum increment
+            bidAmountInput.min = BASE_PRICE.toFixed(2);
+            bidAmountInput.step = MIN_INCREMENT.toFixed(2);
+            
+            // Set initial highest bid display
+            updateHighestBidDisplay();
+            
+            // Setup quick bid buttons
+            document.querySelectorAll('.quick-bid').forEach(button => {
+                button.addEventListener('click', function() {
+                    const increment = parseFloat(this.dataset.increment);
+                    const currentValue = parseFloat(bidAmountInput.value) || highestBid.amount;
+                    bidAmountInput.value = (currentValue + increment).toFixed(2);
+                });
+            });
+            
+            // Start countdown timer
+            updateCountdown();
+            const countdownInterval = setInterval(updateCountdown, 1000);
         }
-
-        // Countdown timer based on the real end_time from the server
+        
+        // Countdown timer
         function updateCountdown() {
-            if (auctionFinished || !auctionEndTime) return;
-
+            if (auctionPaused) return;
+            
             const now = new Date().getTime();
             const distance = auctionEndTime - now;
-
+            
             if (distance <= 0) {
-                refreshAuctionState();
+                finishAuction();
                 return;
             }
-
-            const hours = Math.floor(distance / (1000 * 60 * 60));
+            
+            // Calculate time remaining
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            countdownElement.textContent =
-                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Display the result
+            countdownElement.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
-
-        // Finish auction (server says it's no longer active)
-        function finishAuction(data) {
+        
+        // Finish auction
+        function finishAuction() {
             auctionFinished = true;
             bidButton.disabled = true;
             document.getElementById('auctionStatus').textContent = "Auction finished";
-            clearInterval(countdownInterval);
-            clearInterval(pollInterval);
-
+            
+            // Show winner section
             winnerSection.style.display = 'block';
-            document.getElementById('winnerName').textContent = data.highest_bid ? data.highest_bid.email : "No bidder";
-            document.getElementById('winningBid').textContent = data.highest_bid ? `€${data.highest_bid.amount.toFixed(2)}` : `€${BASE_PRICE.toFixed(2)}`;
-            document.getElementById('totalBids').textContent = data.bids.length;
+            
+            // Set winner information
+            document.getElementById('winnerName').textContent = highestBid.name;
+            document.getElementById('winningBid').textContent = `€${highestBid.amount.toFixed(2)}`;
+            document.getElementById('totalBids').textContent = bids.length;
         }
-
-        // Handle bid submission - sends the bid to the real backend
+        
+        // Handle bid submission
         bidForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-
+            
             if (auctionFinished) {
                 alert("The auction has already finished!");
                 return;
             }
-
-            const bidAmount = parseFloat(bidAmountInput.value);
-            if (!bidAmount) {
-                alert("Please enter a bid amount");
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const bidAmount = parseFloat(document.getElementById('bidAmount').value);
+            const minNextBid = highestBid.amount + parseFloat(document.getElementById('minIncrement').textContent.replace('€', ''));
+            
+            // Validate bid amount
+            if (bidAmount < BASE_PRICE) {
+                alert(`Your bid must be at least the base price of €${BASE_PRICE.toFixed(2)}`);
                 return;
             }
-
+            
+            if (bidAmount < minNextBid) {
+                alert(`Your bid must be at least €${minNextBid.toFixed(2)} (current bid + minimum increment)`);
+                return;
+            }
+            
+            // Verify email exists in database
             try {
-                const response = await fetch(`/place_bid/${PRODUCT_ID}`, {
+                const response = await fetch('/verify_email', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: bidAmount })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: email })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (!response.ok) {
-                    alert(data.error || 'Could not place bid');
+                    throw new Error(data.message || 'Email verification failed');
+                }
+                
+                if (!data.valid) {
+                    alert(data.message || 'Email not registered. Please sign up first.');
                     return;
                 }
-
-                bidAmountInput.value = '';
-                await refreshAuctionState();
             } catch (error) {
-                console.error('Error placing bid:', error);
-                alert('Error placing bid. Please try again.');
+                console.error('Error verifying email:', error);
+                alert('Error verifying email. Please try again.');
+                return;
             }
+            
+            // Create new bid
+            const newBid = {
+                name: name,
+                email: email,
+                amount: bidAmount,
+                time: new Date().toLocaleTimeString(),
+                timestamp: new Date().getTime()
+            };
+            
+            // Add to bids array
+            bids.push(newBid);
+            lastBidTime = new Date().getTime();
+            
+            // Update highest bid
+            highestBid = {
+                name: name,
+                amount: bidAmount,
+                email: email
+            };
+            
+            // Update UI
+            updateBidList();
+            updateHighestBidDisplay();
+            
+            // Reset form (keep name/email for convenience)
+            document.getElementById('bidAmount').value = '';
+            document.getElementById('bidAmount').focus();
         });
-
-        // Quick bid buttons
-        document.querySelectorAll('.quick-bid').forEach(button => {
-            button.addEventListener('click', function() {
-                const increment = parseFloat(this.dataset.increment);
-                const currentValue = parseFloat(bidAmountInput.value) || BASE_PRICE;
-                bidAmountInput.value = (currentValue + increment).toFixed(2);
-            });
-        });
-
-        // Update highest bid display from server data
-        function updateHighestBidDisplay(data) {
-            const highest = data.highest_bid;
-            document.getElementById('highestBidAmount').textContent = `€${(highest ? highest.amount : data.base_price).toFixed(2)}`;
-            document.getElementById('highestBidder').textContent = highest ? highest.email : 'None';
-            document.getElementById('nextMinBid').textContent = `€${data.min_next_bid.toFixed(2)}`;
-            bidAmountInput.min = data.min_next_bid;
-            bidAmountInput.placeholder = `Minimum: €${data.min_next_bid.toFixed(2)}`;
-        }
-
-        // Update bid history table from server data
-        function updateBidList(bids) {
+        
+        // Update bid list display
+        function updateBidList() {
             const tableBody = document.getElementById('bidsTableBody');
             tableBody.innerHTML = '';
-
+            
+            // Sort bids by amount (highest first)
+            bids.sort((a, b) => b.amount - a.amount);
+            
+            // Add each bid to the table
             bids.forEach((bid, index) => {
                 const row = document.createElement('tr');
-                if (index === 0) row.classList.add('highlight');
+                
+                // Highlight current highest bid
+                if (index === 0) {
+                    row.classList.add('highlight');
+                }
+                
                 row.innerHTML = `
-                    <td>${bid.email}</td>
+                    <td>${bid.name}</td>
                     <td>€${bid.amount.toFixed(2)}</td>
                     <td>${bid.time}</td>
                 `;
+                
                 tableBody.appendChild(row);
             });
-
+            
+            // Update bid count
             document.getElementById('bidCount').textContent = `(${bids.length})`;
         }
-
+        
+        // Update highest bid display
+        function updateHighestBidDisplay() {
+            document.getElementById('highestBidAmount').textContent = `€${highestBid.amount.toFixed(2)}`;
+            document.getElementById('highestBidder').textContent = highestBid.name;
+            
+            // Calculate next minimum bid
+            const minIncrement = parseFloat(document.getElementById('minIncrement').textContent.replace('€', ''));
+            const nextMinBid = highestBid.amount + minIncrement;
+            document.getElementById('nextMinBid').textContent = `€${nextMinBid.toFixed(2)}`;
+            
+            // Set suggested bid amount
+            bidAmountInput.placeholder = `Minimum: €${nextMinBid.toFixed(2)}`;
+        }
+        
         // Initialize the auction when page loads
-        window.addEventListener('DOMContentLoaded', function() {
-            refreshAuctionState();
-            countdownInterval = setInterval(updateCountdown, 1000);
-            // Re-sync with the server periodically so bids from other users show up
-            pollInterval = setInterval(refreshAuctionState, 5000);
-        });
+        window.addEventListener('DOMContentLoaded', initAuction);
     </script>
 </body>
 </html>
