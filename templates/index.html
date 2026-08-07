@@ -197,34 +197,7 @@
     </div>
 
     <div class="row" id="productList">
-      <!-- Products injected dynamically -->
-    </div>
-
-    <div class="overlay" id="overlay"></div>
-
-    <div class="detail-view" id="detailView">
-      <span class="close-detail" onclick="closeDetail()">&times;</span>
-      <div class="detail-img-container">
-        <img id="detailImg" class="detail-img" src="" alt="">
-      </div>
-      <div class="detail-info">
-        <h3 id="detailName"></h3>
-        <p><strong>Brand:</strong> <span id="detailBrand"></span></p>
-        <p><strong>Style:</strong> <span id="detailStyle"></span></p>
-        <p><strong>Skin:</strong> <span id="detailSkin"></span></p>
-        <p><strong>Interior:</strong> <span id="detailInner"></span></p>
-        <p><strong>Color:</strong> <span id="detailColor"></span></p>
-        <p><strong>Volume:</strong> <span id="detailVolume"></span></p>
-        <p><strong>Accessories:</strong> <span id="detailAccessories"></span></p>
-        <p><strong>Price:</strong> <span id="detailPrice"></span></p>
-        <p><strong>Availability:</strong> <span id="detailStock"></span></p>
-        <p><strong>Type:</strong> <span id="detailType"></span></p>
-        <button id="detailActionBtn" class="btn btn-primary mt-3 w-100"></button>
-      </div>
-    </div>
-
-    {% if products %}
-      <div class="row mt-4">
+      {% if products %}
         {% for product in products %}
         <div class="col-md-4 mb-4">
           <div class="card h-100"
@@ -264,10 +237,33 @@
           </div>
         </div>
         {% endfor %}
+      {% else %}
+        <p class="text-center">No products available.</p>
+      {% endif %}
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="detail-view" id="detailView">
+      <span class="close-detail" onclick="closeDetail()">&times;</span>
+      <div class="detail-img-container">
+        <img id="detailImg" class="detail-img" src="" alt="">
       </div>
-    {% else %}
-      <p class="text-center">No products available.</p>
-    {% endif %}
+      <div class="detail-info">
+        <h3 id="detailName"></h3>
+        <p><strong>Brand:</strong> <span id="detailBrand"></span></p>
+        <p><strong>Style:</strong> <span id="detailStyle"></span></p>
+        <p><strong>Skin:</strong> <span id="detailSkin"></span></p>
+        <p><strong>Interior:</strong> <span id="detailInner"></span></p>
+        <p><strong>Color:</strong> <span id="detailColor"></span></p>
+        <p><strong>Volume:</strong> <span id="detailVolume"></span></p>
+        <p><strong>Accessories:</strong> <span id="detailAccessories"></span></p>
+        <p><strong>Price:</strong> <span id="detailPrice"></span></p>
+        <p><strong>Availability:</strong> <span id="detailStock"></span></p>
+        <p><strong>Type:</strong> <span id="detailType"></span></p>
+        <button id="detailActionBtn" class="btn btn-primary mt-3 w-100"></button>
+      </div>
+    </div>
   </div>
 
   <!-- Auction Popup -->
