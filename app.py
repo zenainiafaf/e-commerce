@@ -177,6 +177,28 @@ with app.app_context():
             db.session.add(auction)
         db.session.commit()
 
+# Automatically close auctions whose end_time has passed.
+# Without this, `is_active` stays True forever and the profile page
+# never shows the auction as ended (no "you won" / "you lost" message,
+# it just keeps looking like an ongoing auction).
+@app.before_request
+def close_expired_auctions():
+    try:
+        now = datetime.utcnow()
+        expired_auctions = Auction.query.filter(
+            Auction.is_active == True,
+            Auction.end_time <= now
+        ).all()
+
+        if expired_auctions:
+            for auction in expired_auctions:
+                auction.is_active = False
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("Error closing expired auctions:", e)
+
+
 # Routes
 @app.route('/')
 def index():
