@@ -179,8 +179,9 @@ with app.app_context():
 
 # Automatically close auctions whose end_time has passed.
 # Without this, `is_active` stays True forever and the profile page
-# never shows the auction as ended (no "you won" / "you lost" message,
-# it just keeps looking like an ongoing auction).
+# never shows the auction as ended (no "you won" / "you lost" message).
+# This does NOT end auctions early - it only closes ones whose real
+# end_time (set by the admin) has already passed.
 @app.before_request
 def close_expired_auctions():
     try:
@@ -858,6 +859,34 @@ def auction_detail(product_id):
     else:
         return "This auction has already ended.", 404
     
+
+
+@app.route('/auction_status/<int:product_id>')
+def auction_status(product_id):
+    """Real-time auction state, read from the database (not a client-side fake timer)."""
+    product = Product.query.get_or_404(product_id)
+    auction = Auction.query.filter_by(product_id=product_id).first()
+    if not auction:
+        return jsonify({'error': 'No auction found for this product'}), 404
+
+    bids = Bid.query.filter_by(auction_id=auction.id).order_by(Bid.amount.desc()).all()
+    highest_bid = bids[0] if bids else None
+    min_bid = highest_bid.amount + 1 if highest_bid else product.price
+
+    return jsonify({
+        'is_active': auction.is_active,
+        'end_time': auction.end_time.isoformat() + 'Z',
+        'base_price': product.price,
+        'min_next_bid': min_bid,
+        'highest_bid': {
+            'amount': highest_bid.amount,
+            'email': highest_bid.user_email
+        } if highest_bid else None,
+        'bids': [
+            {'email': b.user_email, 'amount': b.amount, 'time': b.bid_time.strftime('%H:%M:%S')}
+            for b in bids
+        ]
+    })
 
 
 @app.route('/place_bid/<int:product_id>', methods=['POST'])
