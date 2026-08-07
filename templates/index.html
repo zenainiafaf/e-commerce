@@ -342,11 +342,21 @@
         filtered = filtered.filter(p => p.brand && p.brand.toLowerCase() === selectedBrand.toLowerCase());
       }
 
-      // Sort by price
-      if (order === 'asc') {
-        filtered.sort((a, b) => a.price - b.price);
-      } else if (order === 'desc') {
-        filtered.sort((a, b) => b.price - a.price);
+      // Sort by price (robust to null/undefined/non-numeric price values)
+      function priceOf(p) {
+        const n = parseFloat(p.price);
+        return isNaN(n) ? null : n;
+      }
+
+      if (order === 'asc' || order === 'desc') {
+        filtered.sort((a, b) => {
+          const pa = priceOf(a);
+          const pb = priceOf(b);
+          if (pa === null && pb === null) return 0;
+          if (pa === null) return 1;   // invalid prices pushed to the end
+          if (pb === null) return -1;
+          return order === 'asc' ? pa - pb : pb - pa;
+        });
       }
 
       renderProducts(filtered);
