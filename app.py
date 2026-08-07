@@ -177,6 +177,29 @@ with app.app_context():
             db.session.add(auction)
         db.session.commit()
 
+# Automatically close auctions whose end_time has passed.
+# Without this, `is_active` stays True forever and the profile page
+# never shows the auction as ended (no "you won" / "you lost" message).
+# This does NOT end auctions early - it only closes ones whose real
+# end_time (set by the admin) has already passed.
+@app.before_request
+def close_expired_auctions():
+    try:
+        now = datetime.utcnow()
+        expired_auctions = Auction.query.filter(
+            Auction.is_active == True,
+            Auction.end_time <= now
+        ).all()
+
+        if expired_auctions:
+            for auction in expired_auctions:
+                auction.is_active = False
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("Error closing expired auctions:", e)
+
+
 # Routes
 @app.route('/')
 def index():
@@ -186,9 +209,6 @@ def index():
     return render_template('index.html', products=products, cart_count=cart_count, stripe_public_key=STRIPE_PUBLIC_KEY)
 
 
-ADMIN_EMAILS = [
-    "admin1@gmail.com"
-]
 # Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -205,8 +225,9 @@ def login():
         if user:
             if check_password_hash(user.password, password):
                 session['customer_email'] = email
+                session.permanent = True
                 
-                if user.email in ADMIN_EMAILS:
+                if user.is_admin:
                    return redirect(url_for('admin'))
                 
                 # Redirect to the requested page or to the index by default
@@ -222,6 +243,7 @@ def login():
                 db.session.add(new_user)
                 db.session.commit()
                 session['customer_email'] = email
+                session.permanent = True
                 
                 if redirect_to:
                     return redirect(url_for(redirect_to))  # Same change for registration
@@ -838,6 +860,34 @@ def auction_detail(product_id):
     
 
 
+@app.route('/auction_status/<int:product_id>')
+def auction_status(product_id):
+    """Real-time auction state, read from the database (not a client-side fake timer)."""
+    product = Product.query.get_or_404(product_id)
+    auction = Auction.query.filter_by(product_id=product_id).first()
+    if not auction:
+        return jsonify({'error': 'No auction found for this product'}), 404
+
+    bids = Bid.query.filter_by(auction_id=auction.id).order_by(Bid.amount.desc()).all()
+    highest_bid = bids[0] if bids else None
+    min_bid = highest_bid.amount + 1 if highest_bid else product.price
+
+    return jsonify({
+        'is_active': auction.is_active,
+        'end_time': auction.end_time.isoformat() + 'Z',
+        'base_price': product.price,
+        'min_next_bid': min_bid,
+        'highest_bid': {
+            'amount': highest_bid.amount,
+            'email': highest_bid.user_email
+        } if highest_bid else None,
+        'bids': [
+            {'email': b.user_email, 'amount': b.amount, 'time': b.bid_time.strftime('%H:%M:%S')}
+            for b in bids
+        ]
+    })
+
+
 @app.route('/place_bid/<int:product_id>', methods=['POST'])
 def place_bid(product_id):
     if 'customer_email' not in session:
@@ -878,6 +928,10 @@ def profile():
     
     if not user:
         return redirect(url_for('login'))
+    
+    # Admins don't have a customer profile page - send them to the admin panel
+    if user.is_admin:
+        return redirect(url_for('admin'))
     
     # Retrieve the user's orders
     orders = Order.query.filter_by(customer_email=email).order_by(Order.order_date.desc()).all()
