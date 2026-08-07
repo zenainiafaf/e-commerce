@@ -352,6 +352,7 @@
     document.addEventListener('DOMContentLoaded', function() {
       loadProductsFromTemplate();
       setupEventListeners();
+      applyStoredDarkMode();
     });
 
     function loadProductsFromTemplate() {
@@ -494,7 +495,14 @@
     }
 
     function toggleDarkMode() {
-      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', isDark ? '1' : '0');
+    }
+
+    function applyStoredDarkMode() {
+      if (localStorage.getItem('darkMode') === '1') {
+        document.body.classList.add('dark-mode');
+      }
     }
 
     function showPopup() {

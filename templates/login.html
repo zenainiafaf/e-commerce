@@ -19,6 +19,11 @@
         align-items: center;
         min-height: 100vh;
         background: linear-gradient(90deg, #D8B4A6, #F1E1C6); /* Beige to light brown gradient */
+        transition: background 0.3s;
+      }
+
+      body.dark-mode {
+        background: linear-gradient(90deg, #4E3629, #A56D47);
       }
 
       .container {
@@ -351,6 +356,11 @@
     </div>
 
     <script>
+      // Apply stored dark mode preference (kept in sync with the rest of the site)
+      if (localStorage.getItem('darkMode') === '1') {
+        document.body.classList.add('dark-mode');
+      }
+
       const registerBtn = document.querySelector(".register-btn");
       const loginBtn = document.querySelector(".login-btn");
       const container = document.querySelector(".container");
