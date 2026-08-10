@@ -198,6 +198,41 @@
       cursor: pointer;
       z-index: 1001;
     }
+
+    /* --- Mobile fix: stack the product detail popup instead of squeezing it side by side --- */
+    @media (max-width: 767.98px) {
+      .detail-view {
+        width: 92%;
+        max-width: 92%;
+        max-height: 85vh;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .detail-view.active {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .detail-img-container {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .detail-img {
+        max-height: 220px;
+      }
+
+      .detail-info {
+        min-width: 0;
+        width: 100%;
+        max-height: none;
+      }
+
+      .detail-fields {
+        overflow-y: visible;
+      }
+    }
   </style>
 </head>
 <body>
@@ -205,29 +240,40 @@
   <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
       <a class="navbar-brand" href="/">🛍 Shop</a>
-      <button class="btn btn-outline-light me-2" onclick="toggleDarkMode()">🌙 Dark mode</button>
 
-      {% if session.get('customer_email') %}
-        <div class="dropdown me-2">
-          <button class="btn btn-outline-light dropdown-toggle" type="button" id="accountMenu" data-bs-toggle="dropdown" aria-expanded="false">
-            👤 {{ session.get('customer_email') }}
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
-            <li><a class="dropdown-item" href="{{ url_for('profile') }}">👤 My Profile</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
-          </ul>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+              data-bs-target="#navbarContent" aria-controls="navbarContent"
+              aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <div class="d-flex flex-wrap gap-2 ms-lg-auto mt-3 mt-lg-0 align-items-center">
+          <button class="btn btn-outline-light" onclick="toggleDarkMode()">🌙 Dark mode</button>
+
+          {% if session.get('customer_email') %}
+            <div class="dropdown">
+              <button class="btn btn-outline-light dropdown-toggle" type="button" id="accountMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                👤 {{ session.get('customer_email') }}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountMenu">
+                <li><a class="dropdown-item" href="{{ url_for('profile') }}">👤 My Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
+              </ul>
+            </div>
+          {% else %}
+            <a href="{{ url_for('login', redirect='profile') }}" class="btn btn-outline-light">👤 Login</a>
+          {% endif %}
+
+          <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
+            🛒 Cart
+            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ cart_count }}
+            </span>
+          </a>
         </div>
-      {% else %}
-        <a href="{{ url_for('login', redirect='profile') }}" class="btn btn-outline-light me-2">👤 Login</a>
-      {% endif %}
-
-      <a href="{{ url_for('cart') }}" class="btn btn-outline-light position-relative">
-        🛒 Cart
-        <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          {{ cart_count }}
-        </span>
-      </a>
+      </div>
     </div>
   </nav>
 
